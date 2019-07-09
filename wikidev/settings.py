@@ -25,7 +25,7 @@ SECRET_KEY = 'ttgfg&)=_wx!274!ie5pfsxe-%87b48dkh$hl*fb$#!45c(j9@'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['172.16.36.74', 'localhost']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
