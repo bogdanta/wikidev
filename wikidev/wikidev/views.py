@@ -63,8 +63,9 @@ class SearchWizardView(View, WikiMixin):
             )
         ]
         return self.to_response(
-            onem.forms.Form(body, reverse('search_wizard'), method='POST')
-        )
+                onem.forms.Form(body, reverse('search_wizard'), method='POST',
+                meta=onem.forms.FormMeta(confirm=False)
+        ))
 
     def post(self, request):
         keyword = request.POST['keyword'].replace(' ', '_').replace('#', '')
