@@ -1,0 +1,9 @@
+{
+  "name": "Django ONEm Wikidev app",
+  "description": "Django ONEm Wikidev app",
+  "repository": "https://github.com/bogdanta/wikidev",
+  "keywords": ["django", "onem", "wikidev", "sms", "app"],
+  "env": {
+      "DISABLE_COLLECTSTATIC": "1"
+  }
+}
