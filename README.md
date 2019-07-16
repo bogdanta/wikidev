@@ -41,4 +41,5 @@ Register the app on the [ONEm developer portal](https://developer-portal-poc.one
 Set the callback URL to the forwarding address obtained from ngrok's output, go to the [sandbox](https://poc.onem.zone/) and send #wikinew.
 
 
-
+### Deploy to Heroku
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
