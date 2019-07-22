@@ -1,4 +1,4 @@
-import onem
+import onemsdk
 import datetime
 import jwt
 import requests
@@ -11,6 +11,12 @@ from django.utils.decorators import method_decorator
 from django.urls import reverse
 from django.views.generic import View as _View
 from django.shortcuts import get_object_or_404
+
+from onemsdk.schema.v1 import (
+    Response, Menu, MenuItem, MenuItemType, Form, FormItemContent,
+    FormItemContentType, FormMeta
+)
+
 
 from .helpers import WikiMixin
 
@@ -28,68 +34,82 @@ class View(_View):
         data = jwt.decode(token.replace('Bearer ', ''), key='87654321')
         user, created = User.objects.get_or_create(id=data['sub'],
                                                    username=str(data['sub']))
-       # user, created = User.objects.get_or_create(id=231243,
-       #                                            username='Mircea')
         return user
 
-    def to_response(self, menu_or_form):
-        response = onem.Response(
-                menu_or_form, self.request.headers['X-Onem-Correlation-Id']
-        )
-        return HttpResponse(response.as_json(), content_type='application/json')
+    def to_response(self, content):
+        response = Response(content=content)
+        response.correlation_id = self.request.headers['X-Onem-Correlation-Id']
+
+        return HttpResponse(response.json(), content_type='application/json')
 
 
 class HomeView(View):
     http_method_names = ['get']
 
     def get(self, request):
-        #user = self.get_user()
+        #user = self.get_user()  # TODO
 
-        body = [
-            onem.menus.MenuItem('Search', url=reverse('search_wizard')),
-            onem.menus.MenuItem('Random', url=reverse('random')),
-            onem.menus.MenuItem('Language', url=reverse('language'))
+        menu_items = [
+            MenuItem(type=MenuItemType.option,
+                     description='Search',
+                     method='GET',
+                     path=reverse('search_wizard')),
+            MenuItem(type=MenuItemType.option,
+                     description='Random',
+                     method='GET',
+                     path=reverse('random')),
+            MenuItem(type=MenuItemType.option,
+                     description='Language',
+                     method='GET',
+                     path=reverse('language'))
         ]
 
-        return self.to_response(onem.menus.Menu(body, header='menu'))
+        menu = Menu(body=menu_items)
+
+        return self.to_response(menu)
 
 
 class SearchWizardView(View, WikiMixin):
     http_method_names = ['get', 'post']
 
     def get(self, request):
-        body = [
-            onem.forms.FormItem(
-                'keyword', onem.forms.FormItemType.STRING, 'Send keyword',
-                header='search', footer='Send keyword'
-            )
+        form_items = [
+            FormItemContent(type=FormItemContentType.string,
+                     name='keyword',
+                     description='Send keyword',
+                     header='search',
+                     footer='Send keyword')
         ]
-        return self.to_response(
-                onem.forms.Form(body, reverse('search_wizard'), method='POST',
-                meta=onem.forms.FormMeta(confirm=False)
-        ))
+        form = Form(body=form_items,
+                    method='POST',
+                    path=reverse('search_wizard'),
+                    meta=FormMeta(confirmation_needed=False,
+                                  completion_status_in_header=False,
+                                  completion_status_show=False))
+
+        return self.to_response(form)
 
     def post(self, request):
         keyword = request.POST['keyword'].replace(' ', '_').replace('#', '')
         title, content, props, page_type = self.page_type(keyword)
         url = self.build_url(keyword)
         response = requests.get(url)
+
         try:
             page_id, page_value = [*response.json()['query']['pages'].items()][0]
             if page_id == '-1':
                 raise ValueError
-            body = onem.menus.MenuItem(
-                page_value.get('extract').split('==')[0].strip(),
-                is_option=False
-            )
+            body = MenuItem(type=MenuItemType.content,
+                            description=page_value.get('extract').split('==')[0].strip())
         except ValueError:
-            body = onem.menus.MenuItem('Please try again later', is_option=False)
+            body = MenuItem(type=MenuItemType.content,
+                            description='Please try again later')
 
-        return self.to_response(onem.menus.Menu(
-            [body],
-            header='(ENGLISH) {keyword} SEARCH'.format(keyword=keyword.title()),
-            footer='Send MENU'
-        ))
+        menu = Menu(body=[body],
+                    header='(ENGLISH) {keyword} SEARCH'.format(keyword=keyword.title()),
+                    footer='Send MENU')
+
+        return self.to_response(menu)
 
 
 class RandomView(View, WikiMixin):
@@ -103,33 +123,24 @@ class RandomView(View, WikiMixin):
             article_id, article_details = [*article_details.items()][0]
             title = article_details['title']
 
-            body = [
-                onem.menus.MenuItem(
-                    article_details.get('extract', '').split('==')[0].strip(),
-                    is_option=False
-                )
-            ]
+            body = MenuItem(type=MenuItemType.content,
+                            description=article_details.get('extract', '').split('==')[0].strip())
         except:
-             body = [onem.menus.MenuItem('Please try again later', is_option=False)]
+            body = MenuItem(type=MenuItemType.content,
+                            description='Please try again later')
 
-        return self.to_response(
-            onem.menus.Menu(body, header='random', footer='Reply MENU')
-        )
+        menu = Menu(body=[body], header='random',footer='Reply MENU')
+
+        return self.to_response(menu)
 
 
 class LanguageView(View):
     http_method_names = ['get']
 
     def get(self, request):
-        return self.to_response(
-            onem.menus.Menu(
-                [
-                    onem.menus.MenuItem(
-                        'Currently only English is supported. More languages to be added soon.',
-                        is_option=False
-                    )
-                ],
-                header='Language',
-                footer='Reply MENU'
-            )
-        )
+        body = MenuItem(type=MenuItemType.content,
+                        description='Currently only English is supported. More languages to be added soon.')
+
+        menu = Menu(body=[body], header='language',footer='Reply MENU')
+
+        return self.to_response(menu)

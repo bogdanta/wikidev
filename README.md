@@ -6,9 +6,7 @@ It uses the ONEm developer framework.
 
 
 ## Direct usage
-Head to https://testtool.onem.zone/ and send #wikidev.
-Note: the app currently runs on my local machine(aka it is not deployed) so if a "Something is wrong with #WIKIDEV. Please try again." message is received it means my local Django server needs to be started.
-
+Head to https://poc.onem.zone/ and send #wikidev.
 
 ## Installation
 
